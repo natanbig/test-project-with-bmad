@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: okps-consumer-headless
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-consumer
+    app.kubernetes.io/component: consumer
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: okps-consumer
+  ports:
+    - name: otlp-grpc
+      protocol: TCP
+      port: 4317
+      targetPort: otlp-grpc

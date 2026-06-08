@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: okps-consumer
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-consumer
+    app.kubernetes.io/component: consumer
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: okps-consumer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: okps-consumer
+        app.kubernetes.io/component: consumer
+        app.kubernetes.io/part-of: okps-pipeline
+    spec:
+      containers:
+        - name: consumer
+          image: okps-consumer:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+            - containerPort: 2113
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: okps-consumer-config
+            - secretRef:
+                name: okps-runtime-secrets
+                optional: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

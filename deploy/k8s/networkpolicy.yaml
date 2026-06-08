@@ -1,0 +1,136 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: okps-default-deny
+  namespace: okps
+  labels:
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: okps-allow-dns-egress
+  namespace: okps
+  labels:
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: okps-producer-traffic
+  namespace: okps
+  labels:
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: okps-producer
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: okps
+      ports:
+        - protocol: TCP
+          port: 2112
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: okps-collector
+      ports:
+        - protocol: TCP
+          port: 4317
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: okps-collector-traffic
+  namespace: okps
+  labels:
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: okps-collector
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: okps-producer
+      ports:
+        - protocol: TCP
+          port: 4317
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: okps
+      ports:
+        - protocol: TCP
+          port: 8888
+        - protocol: TCP
+          port: 8889
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: okps-consumer
+      ports:
+        - protocol: TCP
+          port: 4317
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: okps-consumer-traffic
+  namespace: okps
+  labels:
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: okps-consumer
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: okps-collector
+      ports:
+        - protocol: TCP
+          port: 4317
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: okps
+      ports:
+        - protocol: TCP
+          port: 2113
+  egress: []

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package okps;
+
+option go_package = "github.com/ejh/test-project-with-bmad/proto/okps;okpspb";
+
+// Compression defines supported payload compression formats.
+enum Compression {
+  COMPRESSION_UNSPECIFIED = 0;
+  COMPRESSION_GZIP = 1;
+  COMPRESSION_ZSTD = 2;
+}
+
+// Envelope is the strict package contract shared by producer, collector, and consumer.
+message Envelope {
+  string message_id = 1;
+  string producer_id = 2;
+  int64 created_at_unix_ms = 3;
+  Compression compression = 4;
+  uint64 original_size_bytes = 5;
+  uint64 compressed_size_bytes = 6;
+  bytes payload = 7;
+}

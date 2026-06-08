@@ -1,0 +1,86 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+  prometheus/self:
+    config:
+      scrape_configs:
+        - job_name: otelcol-self
+          scrape_interval: 10s
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 256
+
+  # Promote runId from span attributes to resource service.name so the
+  # loadbalancing exporter can use a stable key for per-run affinity.
+  transform/runid_to_service:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(resource.attributes["service.name"], attributes["okps.run_id"]) where attributes["okps.run_id"] != nil
+
+  metricstransform/collector_counters:
+    transforms:
+      - include: otelcol_receiver_accepted_spans
+        match_type: strict
+        action: update
+        new_name: okps_collector_messages_received_total
+      - include: otelcol_exporter_sent_spans
+        match_type: strict
+        action: update
+        new_name: okps_collector_messages_exported_total
+      - include: otelcol_exporter_send_failed_spans
+        match_type: strict
+        action: update
+        new_name: okps_collector_export_errors_total
+
+exporters:
+  # Consumer endpoints are discovered via Kubernetes headless service DNS.
+  loadbalancing:
+    routing_key: service
+    resolver:
+      dns:
+        hostname: okps-consumer-headless.okps.svc.cluster.local
+        port: "4317"
+        interval: 5s
+        timeout: 1s
+    protocol:
+      otlp:
+        tls:
+          insecure: true
+    # Bounded buffering to avoid unbounded growth while routing by run key.
+    sending_queue:
+      enabled: true
+      queue_size: 10000
+      num_consumers: 4
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform/runid_to_service, batch]
+      exporters: [loadbalancing]
+
+    metrics/internal:
+      receivers: [prometheus/self]
+      processors: [metricstransform/collector_counters, batch]
+      exporters: [prometheus]

@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: okps-collector
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-collector
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: okps-collector

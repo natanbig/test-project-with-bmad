@@ -1,0 +1,23 @@
+name: burst
+profile: burst
+description: Bursty traffic profile to expose transient saturation and distribution imbalance.
+
+duration_seconds: 180
+ramp_up_seconds: 20
+sample_interval_seconds: 10
+metrics_window_seconds: 180
+
+load:
+  producer_send_rate_per_pod: 400
+  producer_concurrency: 8
+
+test_matrix:
+  producer_replicas: [2, 4, 6]
+  collector_replicas: [1, 2, 3]
+  consumer_replicas: [1, 2, 4]
+
+thresholds:
+  min_fairness_score: 0.85
+  max_consumer_skew_ratio: 1.80
+  min_consumer_receive_ratio: 0.95
+  min_collector_receive_ratio: 0.95

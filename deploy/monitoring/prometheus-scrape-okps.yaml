@@ -1,0 +1,56 @@
+# Add this snippet under scrape_configs in your Prometheus configuration.
+# It discovers OKPS pods in the okps namespace and scrapes the metrics ports.
+
+- job_name: okps-producer
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: keep
+      regex: okps
+    - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      action: keep
+      regex: okps-producer
+    - source_labels: [__meta_kubernetes_pod_container_port_name]
+      action: keep
+      regex: metrics
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_pod_node_name]
+      target_label: node
+
+- job_name: okps-collector
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: keep
+      regex: okps
+    - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      action: keep
+      regex: okps-collector
+    - source_labels: [__meta_kubernetes_pod_container_port_name]
+      action: keep
+      regex: metrics-exp
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_pod_node_name]
+      target_label: node
+
+- job_name: okps-consumer
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: keep
+      regex: okps
+    - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      action: keep
+      regex: okps-consumer
+    - source_labels: [__meta_kubernetes_pod_container_port_name]
+      action: keep
+      regex: metrics
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_pod_node_name]
+      target_label: node

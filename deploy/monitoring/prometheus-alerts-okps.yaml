@@ -1,0 +1,65 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: okps-reconciliation-alerts
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-monitoring
+    app.kubernetes.io/component: alerts
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  groups:
+    - name: okps.reconciliation
+      rules:
+        # Based on metrics_validation_tolerance_percent=0.5:
+        # critical threshold ratio = 1 - 0.5/100 = 0.995
+        # warning threshold ratio = 1 - (0.5/2)/100 = 0.9975
+        - alert: OKPSReconciliationRatioWarning
+          expr: |
+            (
+              (
+                sum(increase(okps_collector_messages_received_total[5m]))
+                / clamp_min(sum(increase(okps_producer_messages_sent_total[5m])), 1)
+              ) < 0.9975
+              or
+              (
+                sum(increase(okps_consumer_messages_received_total[5m]))
+                / clamp_min(sum(increase(okps_producer_messages_sent_total[5m])), 1)
+              ) < 0.9975
+            )
+            and sum(increase(okps_producer_messages_sent_total[5m])) > 0
+          for: 20s
+          labels:
+            severity: warning
+            service: okps
+            category: reconciliation
+          annotations:
+            summary: OKPS reconciliation ratio degraded (warning)
+            description: |
+              A reconciliation ratio dropped below the warning threshold derived from metrics_validation_tolerance_percent.
+              Current threshold: 0.9975 (tolerance=0.5%).
+
+        - alert: OKPSReconciliationRatioCritical
+          expr: |
+            (
+              (
+                sum(increase(okps_collector_messages_received_total[5m]))
+                / clamp_min(sum(increase(okps_producer_messages_sent_total[5m])), 1)
+              ) < 0.995
+              or
+              (
+                sum(increase(okps_consumer_messages_received_total[5m]))
+                / clamp_min(sum(increase(okps_producer_messages_sent_total[5m])), 1)
+              ) < 0.995
+            )
+            and sum(increase(okps_producer_messages_sent_total[5m])) > 0
+          for: 20s
+          labels:
+            severity: critical
+            service: okps
+            category: reconciliation
+          annotations:
+            summary: OKPS reconciliation ratio below tolerance (critical)
+            description: |
+              Reconciliation has failed tolerance for longer than one scrape interval.
+              Critical threshold: 0.995 (tolerance=0.5%).
