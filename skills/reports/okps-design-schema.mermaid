@@ -1,0 +1,108 @@
+---
+config:
+  layout: elk
+---
+flowchart LR
+  %% Tiers
+  subgraph P[Producer Tier]
+    PDeploy[Deployment: producer]
+    PPods[(Producer Pods)]
+    PMetrics[/Metrics Endpoint/]
+    PDeploy --> PPods
+    PPods --> PMetrics
+  end
+
+  subgraph S1[Ingress Service Layer]
+    CSVC[Service: collector-clusterip :4317]
+  end
+
+  subgraph C[Collector Tier]
+    CDeploy[Deployment: otel-collector]
+    CPods[(Collector Pods)]
+    CCFG[ConfigMap: collector pipeline<br/>receiver + processors + OTLP gRPC exporter]
+    CLB[runId Key Cache<br/>sticky load balancing]
+    CMetrics[/Metrics Endpoint/]
+    CDeploy --> CPods
+    CCFG --> CPods
+    CLB --> CPods
+    CPods --> CMetrics
+  end
+
+  subgraph S2[Export Service Layer]
+    HSVC[Service: consumer-headless]
+  end
+
+  subgraph U[Consumer Tier]
+    UDeploy[Deployment: consumer]
+    UPods[(Consumer Pods)]
+    UMetrics[/Metrics Endpoint/]
+    UDeploy --> UPods
+    UPods --> UMetrics
+  end
+
+  subgraph O[Observability]
+    PR[Prometheus]
+    GR[Grafana]
+    AL[Alert Rules]
+    PR --> GR
+    PR --> AL
+  end
+
+  %% Data path
+  PPods -->|OTLP gRPC payloads| CSVC
+  CSVC --> CPods
+  CPods -->|OTLP gRPC exported telemetry<br/>runId key-cache routing| HSVC
+  HSVC --> UPods
+
+  %% Metrics path
+  PMetrics --> PR
+  CMetrics --> PR
+  UMetrics --> PR
+
+  %% Reconciliation logic
+  RC[Reconciliation Checks<br/>producer_sent vs collector_received<br/>collector_received vs consumers_received]
+  PR --> RC
+  RC --> GR
+
+  %% Scaling and reliability controls
+  HPAp[HPA: producers]
+  HPAc[HPA: collectors]
+  HPAu[HPA: consumers]
+  PDBc[PDB: collector]
+  Probe[Readiness and Liveness Probes]
+
+  HPAp --> PDeploy
+  HPAc --> CDeploy
+  HPAu --> UDeploy
+  PDBc --> CDeploy
+  Probe --> PDeploy
+  Probe --> CDeploy
+  Probe --> UDeploy
+
+  %% Security controls
+  SA[Least-Privilege Service Accounts]
+  NP[Network Policies]
+  TLS[TLS for OTLP gRPC env-dependent]
+
+  SA --> PDeploy
+  SA --> CDeploy
+  SA --> UDeploy
+  NP --> CSVC
+  NP --> HSVC
+  TLS --> CSVC
+
+  classDef tierProducer stroke:#818cf8,fill:#eef2ff
+  classDef tierCollector stroke:#2dd4bf,fill:#f0fdfa
+  classDef tierConsumer stroke:#a78bfa,fill:#f5f3ff
+  classDef serviceLayer stroke:#fb923c,fill:#fff7ed
+  classDef observability stroke:#f87171,fill:#fef2f2
+  classDef control stroke:#facc15,fill:#fefce8
+  classDef security stroke:#4ade80,fill:#f0fdf4
+
+  class P tierProducer
+  class C tierCollector
+  class U tierConsumer
+  class S1,S2 serviceLayer
+  class O observability
+  class HPAp,HPAc,HPAu,PDBc,Probe control
+  class SA,NP,TLS security
