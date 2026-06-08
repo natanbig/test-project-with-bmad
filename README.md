@@ -56,6 +56,15 @@ Override replica matrix for a targeted run set:
 - Runtime ConfigMaps and example Secret: `deploy/k8s/configmap.yaml`, `deploy/k8s/secret.example.yaml`
 - End-to-end deployment and validation runbook: `docs/operations/deploy.md`
 
+Build producer/consumer images and deploy:
+
+```bash
+make k8s-up
+```
+
+The target rebuilds `okps-producer:dev` and `okps-consumer:dev`, applies manifests,
+and restarts producer/consumer deployments so new images are used.
+
 ## Monitoring and Reconciliation Dashboard (US-007)
 
 - Prometheus scrape jobs for producer, collector, and consumer metrics: `deploy/monitoring/prometheus-scrape-okps.yaml`

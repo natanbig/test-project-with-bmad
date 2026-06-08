@@ -1,0 +1,6 @@
+.git
+.gitignore
+_bmad-output
+tests
+scripts
+**/.DS_Store

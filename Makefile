@@ -10,6 +10,9 @@
 	run-producer \
 	run-consumer \
 	run-system \
+	docker-build-producer \
+	docker-build-consumer \
+	docker-build-images \
 	k8s-up \
 	k8s-status \
 	k8s-down
@@ -48,8 +51,16 @@ run-system:
 	go run ./cmd/consumer & \
 	wait
 
+docker-build-producer:
+	docker build -f Dockerfile.producer -t okps-producer:dev .
+
+docker-build-consumer:
+	docker build -f Dockerfile.consumer -t okps-consumer:dev .
+
+docker-build-images: docker-build-producer docker-build-consumer
+
 # Deploy full OKPS stack to local Kubernetes cluster.
-k8s-up:
+k8s-up: docker-build-images
 	kubectl apply -f deploy/k8s/namespace.yaml
 	kubectl apply -f deploy/k8s/configmap.yaml
 	kubectl apply -f deploy/k8s/collector-service.yaml
@@ -62,6 +73,8 @@ k8s-up:
 	kubectl apply -f deploy/k8s/hpa-consumer.yaml
 	kubectl apply -f deploy/k8s/pdb-collector.yaml
 	kubectl apply -f deploy/k8s/networkpolicy.yaml
+	kubectl -n okps rollout restart deploy/okps-producer
+	kubectl -n okps rollout restart deploy/okps-consumer
 	kubectl -n okps rollout status deploy/okps-producer
 	kubectl -n okps rollout status deploy/okps-collector
 	kubectl -n okps rollout status deploy/okps-consumer

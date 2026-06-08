@@ -6,11 +6,26 @@ This runbook deploys the producer, collector, and consumer tiers to a local Kube
 
 - Docker Desktop Kubernetes context is active.
 - `kubectl` is installed and points to the target cluster.
-- Local images are available when using default tags:
-  - `okps-producer:dev`
-  - `okps-consumer:dev`
+- Docker CLI is available so local service images can be built before deploy.
+
+Build local producer/consumer images:
+
+```bash
+make docker-build-images
+```
 
 ## Apply Manifests
+
+Recommended one-step deployment (builds local images first):
+
+```bash
+make k8s-up
+```
+
+`make k8s-up` also triggers a rollout restart for producer and consumer deployments,
+so pods pick up rebuilt `:dev` images.
+
+Manual apply sequence:
 
 ```bash
 kubectl apply -f deploy/k8s/namespace.yaml
@@ -54,7 +69,7 @@ Collector config validation (optional, containerized):
 ```bash
 docker run --rm \
   -v "$PWD/deploy/collector/collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro" \
-  otel/opentelemetry-collector-contrib:latest \
+  otel/opentelemetry-collector-contrib:0.130.0 \
   validate --config=/etc/otelcol-contrib/config.yaml
 ```
 

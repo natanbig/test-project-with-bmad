@@ -1,0 +1,16 @@
+FROM golang:1.23-alpine AS builder
+WORKDIR /src
+
+ARG TARGETOS
+ARG TARGETARCH
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} go build -o /out/okps-producer ./cmd/producer
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=builder /out/okps-producer /usr/local/bin/okps-producer
+EXPOSE 2112
+ENTRYPOINT ["/usr/local/bin/okps-producer"]
