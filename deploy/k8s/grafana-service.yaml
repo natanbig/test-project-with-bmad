@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: okps-grafana
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-grafana
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: okps-pipeline
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: okps-grafana
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3000
+      targetPort: http

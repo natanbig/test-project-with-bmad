@@ -1,6 +1,6 @@
 # OKPS Kubernetes Deployment Runbook
 
-This runbook deploys the producer, collector, and consumer tiers to a local Kubernetes cluster.
+This runbook deploys the producer, collector, consumer, Prometheus, and Grafana tiers to a local Kubernetes cluster.
 
 ## Prerequisites
 
@@ -30,11 +30,19 @@ Manual apply sequence:
 ```bash
 kubectl apply -f deploy/k8s/namespace.yaml
 kubectl apply -f deploy/k8s/configmap.yaml
+kubectl apply -f deploy/k8s/prometheus-configmap.yaml
+kubectl apply -f deploy/k8s/grafana-configmap.yaml
+kubectl apply -f deploy/k8s/grafana-dashboard-configmap.yaml
 kubectl apply -f deploy/k8s/collector-service.yaml
 kubectl apply -f deploy/k8s/consumer-headless-service.yaml
+kubectl apply -f deploy/k8s/metrics-headless-services.yaml
+kubectl apply -f deploy/k8s/prometheus-service.yaml
+kubectl apply -f deploy/k8s/grafana-service.yaml
 kubectl apply -f deploy/k8s/producer-deployment.yaml
 kubectl apply -f deploy/k8s/collector-deployment.yaml
 kubectl apply -f deploy/k8s/consumer-deployment.yaml
+kubectl apply -f deploy/k8s/prometheus-deployment.yaml
+kubectl apply -f deploy/k8s/grafana-deployment.yaml
 kubectl apply -f deploy/k8s/hpa-producer.yaml
 kubectl apply -f deploy/k8s/hpa-collector.yaml
 kubectl apply -f deploy/k8s/hpa-consumer.yaml
@@ -73,27 +81,33 @@ docker run --rm \
   validate --config=/etc/otelcol-contrib/config.yaml
 ```
 
-## Monitoring Setup (US-007)
+## Monitoring Setup (Built-In)
 
-Monitoring artifacts:
+Monitoring artifacts are deployed by default with `make k8s-up`:
 
-- Prometheus scrape config snippet: `deploy/monitoring/prometheus-scrape-okps.yaml`
-- Grafana dashboard JSON: `deploy/monitoring/grafana-okps-dashboard.json`
+- Prometheus config source: `deploy/k8s/prometheus-configmap.yaml`
+- Grafana provisioning config: `deploy/k8s/grafana-configmap.yaml`
+- Grafana dashboard ConfigMap source: `deploy/k8s/grafana-dashboard-configmap.yaml`
 - PromQL query catalog: `docs/monitoring/queries.md`
 
-Integrate scrape jobs by appending the snippet into your Prometheus `scrape_configs`:
+Prometheus and Grafana are available via in-cluster services:
 
 ```bash
-cat deploy/monitoring/prometheus-scrape-okps.yaml
+kubectl -n okps get svc okps-prometheus okps-grafana
 ```
 
-Import the dashboard JSON into Grafana (Dashboards -> New -> Import):
+Port-forward and open the UIs locally:
 
 ```bash
-cat deploy/monitoring/grafana-okps-dashboard.json
+kubectl -n okps port-forward svc/okps-prometheus 9090:9090
+kubectl -n okps port-forward svc/okps-grafana 3000:3000
 ```
 
-After import, ensure datasource binding points to your Prometheus datasource and set `metrics_window` as needed (default: `5m`).
+Grafana defaults to `admin/admin` and auto-provisions:
+- datasource `OKPS Prometheus` -> `http://okps-prometheus.okps.svc.cluster.local:9090`
+- dashboard from `deploy/monitoring/grafana-okps-dashboard.json`
+
+After Grafana starts, set `metrics_window` as needed (default: `5m`).
 
 Quick reconciliation spot checks from Prometheus expression browser:
 
@@ -182,11 +196,15 @@ kubectl -n okps get pdb
 kubectl -n okps rollout status deploy/okps-producer
 kubectl -n okps rollout status deploy/okps-collector
 kubectl -n okps rollout status deploy/okps-consumer
+kubectl -n okps rollout status deploy/okps-prometheus
+kubectl -n okps rollout status deploy/okps-grafana
 ```
 
 ## Cleanup
 
 ```bash
+kubectl delete -f deploy/k8s/grafana-deployment.yaml
+kubectl delete -f deploy/k8s/prometheus-deployment.yaml
 kubectl delete -f deploy/k8s/producer-deployment.yaml
 kubectl delete -f deploy/k8s/collector-deployment.yaml
 kubectl delete -f deploy/k8s/consumer-deployment.yaml
@@ -195,8 +213,14 @@ kubectl delete -f deploy/k8s/hpa-collector.yaml
 kubectl delete -f deploy/k8s/hpa-consumer.yaml
 kubectl delete -f deploy/k8s/pdb-collector.yaml
 kubectl delete -f deploy/k8s/networkpolicy.yaml
+kubectl delete -f deploy/k8s/grafana-service.yaml
+kubectl delete -f deploy/k8s/prometheus-service.yaml
+kubectl delete -f deploy/k8s/metrics-headless-services.yaml
 kubectl delete -f deploy/k8s/collector-service.yaml
 kubectl delete -f deploy/k8s/consumer-headless-service.yaml
+kubectl delete -f deploy/k8s/grafana-dashboard-configmap.yaml
+kubectl delete -f deploy/k8s/grafana-configmap.yaml
+kubectl delete -f deploy/k8s/prometheus-configmap.yaml
 kubectl delete -f deploy/k8s/configmap.yaml
 kubectl delete -f deploy/k8s/namespace.yaml
 ```

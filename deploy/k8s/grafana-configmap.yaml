@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: okps-grafana-config
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-grafana
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: okps-pipeline
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: OKPS Prometheus
+        uid: DS_PROMETHEUS
+        type: prometheus
+        access: proxy
+        isDefault: true
+        url: http://okps-prometheus.okps.svc.cluster.local:9090
+        editable: false
+
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: okps-dashboards
+        orgId: 1
+        folder: OKPS
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: false
+        options:
+          path: /var/lib/grafana/dashboards/okps

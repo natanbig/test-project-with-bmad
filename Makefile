@@ -63,11 +63,19 @@ docker-build-images: docker-build-producer docker-build-consumer
 k8s-up: docker-build-images
 	kubectl apply -f deploy/k8s/namespace.yaml
 	kubectl apply -f deploy/k8s/configmap.yaml
+	kubectl apply -f deploy/k8s/prometheus-configmap.yaml
+	kubectl apply -f deploy/k8s/grafana-configmap.yaml
+	kubectl apply -f deploy/k8s/grafana-dashboard-configmap.yaml
 	kubectl apply -f deploy/k8s/collector-service.yaml
 	kubectl apply -f deploy/k8s/consumer-headless-service.yaml
+	kubectl apply -f deploy/k8s/metrics-headless-services.yaml
+	kubectl apply -f deploy/k8s/prometheus-service.yaml
+	kubectl apply -f deploy/k8s/grafana-service.yaml
 	kubectl apply -f deploy/k8s/producer-deployment.yaml
 	kubectl apply -f deploy/k8s/collector-deployment.yaml
 	kubectl apply -f deploy/k8s/consumer-deployment.yaml
+	kubectl apply -f deploy/k8s/prometheus-deployment.yaml
+	kubectl apply -f deploy/k8s/grafana-deployment.yaml
 	kubectl apply -f deploy/k8s/hpa-producer.yaml
 	kubectl apply -f deploy/k8s/hpa-collector.yaml
 	kubectl apply -f deploy/k8s/hpa-consumer.yaml
@@ -75,9 +83,13 @@ k8s-up: docker-build-images
 	kubectl apply -f deploy/k8s/networkpolicy.yaml
 	kubectl -n okps rollout restart deploy/okps-producer
 	kubectl -n okps rollout restart deploy/okps-consumer
+	kubectl -n okps rollout restart deploy/okps-prometheus
+	kubectl -n okps rollout restart deploy/okps-grafana
 	kubectl -n okps rollout status deploy/okps-producer
 	kubectl -n okps rollout status deploy/okps-collector
 	kubectl -n okps rollout status deploy/okps-consumer
+	kubectl -n okps rollout status deploy/okps-prometheus
+	kubectl -n okps rollout status deploy/okps-grafana
 
 k8s-status:
 	kubectl -n okps get pods
@@ -86,6 +98,8 @@ k8s-status:
 	kubectl -n okps get pdb
 
 k8s-down:
+	kubectl delete -f deploy/k8s/grafana-deployment.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/prometheus-deployment.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/producer-deployment.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/collector-deployment.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/consumer-deployment.yaml --ignore-not-found=true
@@ -94,7 +108,13 @@ k8s-down:
 	kubectl delete -f deploy/k8s/hpa-consumer.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/pdb-collector.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/networkpolicy.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/grafana-service.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/prometheus-service.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/metrics-headless-services.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/collector-service.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/consumer-headless-service.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/grafana-dashboard-configmap.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/grafana-configmap.yaml --ignore-not-found=true
+	kubectl delete -f deploy/k8s/prometheus-configmap.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/configmap.yaml --ignore-not-found=true
 	kubectl delete -f deploy/k8s/namespace.yaml --ignore-not-found=true

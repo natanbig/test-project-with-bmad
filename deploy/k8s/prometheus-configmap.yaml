@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: okps-prometheus-config
+  namespace: okps
+  labels:
+    app.kubernetes.io/name: okps-prometheus
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: okps-pipeline
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 10s
+      evaluation_interval: 10s
+
+    scrape_configs:
+      - job_name: okps-producer
+        dns_sd_configs:
+          - names:
+              - okps-producer-metrics-headless.okps.svc.cluster.local
+            type: A
+            port: 2112
+
+      - job_name: okps-consumer
+        dns_sd_configs:
+          - names:
+              - okps-consumer-metrics-headless.okps.svc.cluster.local
+            type: A
+            port: 2113
+
+      - job_name: okps-collector-self
+        dns_sd_configs:
+          - names:
+              - okps-collector-metrics-headless.okps.svc.cluster.local
+            type: A
+            port: 8888
+
+      - job_name: okps-collector-exported
+        dns_sd_configs:
+          - names:
+              - okps-collector-metrics-headless.okps.svc.cluster.local
+            type: A
+            port: 8889
