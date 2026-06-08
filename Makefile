@@ -15,7 +15,8 @@
 	docker-build-images \
 	k8s-up \
 	k8s-status \
-	k8s-down
+	k8s-down \
+	k8s-prune-images
 
 test: test-go
 
@@ -96,6 +97,14 @@ k8s-status:
 	kubectl -n okps get svc
 	kubectl -n okps get hpa
 	kubectl -n okps get pdb
+
+# Free disk space on cluster nodes by pruning unused container images.
+# Run this when pods fail with 'no space left on device' during image pull.
+# Usage: make k8s-prune-images
+#        make k8s-prune-images PRUNE_NS=default
+PRUNE_NS ?= kube-system
+k8s-prune-images:
+	bash scripts/k8s-prune-node-images.sh "$(PRUNE_NS)"
 
 k8s-down:
 	kubectl delete -f deploy/k8s/grafana-deployment.yaml --ignore-not-found=true
