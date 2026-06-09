@@ -16,7 +16,8 @@
 	k8s-up \
 	k8s-status \
 	k8s-down \
-	k8s-prune-images
+	k8s-prune-images \
+	k8s-recover-monitoring
 
 test: test-go
 
@@ -105,6 +106,19 @@ k8s-status:
 PRUNE_NS ?= kube-system
 k8s-prune-images:
 	bash scripts/k8s-prune-node-images.sh "$(PRUNE_NS)"
+
+# Recover monitoring stack after disk-pressure/image-pull/startup failures.
+k8s-recover-monitoring:
+	-$(MAKE) k8s-prune-images
+	kubectl apply -f deploy/k8s/prometheus-configmap.yaml
+	kubectl apply -f deploy/k8s/grafana-configmap.yaml
+	kubectl apply -f deploy/k8s/grafana-dashboard-configmap.yaml
+	kubectl apply -f deploy/k8s/prometheus-deployment.yaml
+	kubectl apply -f deploy/k8s/grafana-deployment.yaml
+	kubectl -n okps rollout restart deploy/okps-prometheus
+	kubectl -n okps rollout restart deploy/okps-grafana
+	kubectl -n okps rollout status deploy/okps-prometheus --timeout=180s
+	kubectl -n okps rollout status deploy/okps-grafana --timeout=180s
 
 k8s-down:
 	kubectl delete -f deploy/k8s/grafana-deployment.yaml --ignore-not-found=true

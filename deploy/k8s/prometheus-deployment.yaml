@@ -26,6 +26,8 @@ spec:
           args:
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=2h
+            - --storage.tsdb.retention.size=192MB
           ports:
             - containerPort: 9090
               name: http
@@ -52,7 +54,12 @@ spec:
             - name: prometheus-config
               mountPath: /etc/prometheus
               readOnly: true
+            - name: prometheus-data
+              mountPath: /prometheus
       volumes:
         - name: prometheus-config
           configMap:
             name: okps-prometheus-config
+        - name: prometheus-data
+          emptyDir:
+            sizeLimit: 1Gi

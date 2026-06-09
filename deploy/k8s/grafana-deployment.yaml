@@ -30,6 +30,8 @@ spec:
               value: admin
             - name: GF_PATHS_PROVISIONING
               value: /etc/grafana/provisioning
+            - name: GF_PATHS_DATA
+              value: /var/lib/grafana
           ports:
             - containerPort: 3000
               name: http
@@ -53,6 +55,8 @@ spec:
               cpu: 500m
               memory: 512Mi
           volumeMounts:
+            - name: grafana-runtime
+              mountPath: /var/lib/grafana
             - name: grafana-provisioning
               mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
               subPath: datasources.yaml
@@ -65,6 +69,9 @@ spec:
               mountPath: /var/lib/grafana/dashboards/okps
               readOnly: true
       volumes:
+        - name: grafana-runtime
+          emptyDir:
+            sizeLimit: 1Gi
         - name: grafana-provisioning
           configMap:
             name: okps-grafana-config

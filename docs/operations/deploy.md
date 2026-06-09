@@ -25,6 +25,16 @@ make k8s-up
 `make k8s-up` also triggers a rollout restart for producer and consumer deployments,
 so pods pick up rebuilt `:dev` images.
 
+If monitoring pods fail due to node disk pressure (for example Grafana `no space left on device`
+or Prometheus startup faults), run:
+
+```bash
+make k8s-recover-monitoring
+```
+
+This target prunes unused node images, reapplies monitoring config/deployments, and waits for
+Prometheus/Grafana rollout completion.
+
 Manual apply sequence:
 
 ```bash
@@ -199,6 +209,10 @@ kubectl -n okps rollout status deploy/okps-consumer
 kubectl -n okps rollout status deploy/okps-prometheus
 kubectl -n okps rollout status deploy/okps-grafana
 ```
+
+Troubleshooting signatures this runbook addresses:
+- Grafana: `failed to create directory "/var/lib/grafana/png": no space left on device`
+- Prometheus: `fatal error: fault` / `SIGBUS` during startup
 
 ## Cleanup
 

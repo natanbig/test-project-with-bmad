@@ -118,5 +118,5 @@ kubectl logs \
 echo "============================="
 
 echo ""
-echo "Image prune complete. Re-run 'make k8s-up' to retry the Grafana deployment."
+echo "Image prune complete. Run 'make k8s-recover-monitoring' (or 'make k8s-up') to retry monitoring rollouts."
 # DaemonSet cleanup is handled by the EXIT trap.
