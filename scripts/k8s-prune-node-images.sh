@@ -62,7 +62,7 @@ spec:
         - operator: Exists
       initContainers:
         - name: prune
-          image: busybox:1.36
+          image: debian:bookworm-slim
           securityContext:
             privileged: true
           env:
@@ -86,7 +86,7 @@ spec:
               mountPath: /run
       containers:
         - name: done
-          image: busybox:1.36
+          image: debian:bookworm-slim
           command: ["sh", "-c", "sleep infinity"]
           resources:
             requests:
