@@ -15,7 +15,7 @@ const (
 	defaultCompression                = "gzip"
 	defaultOTLPEndpoint               = "localhost:4317"
 	defaultInsecure                   = true
-	defaultSendInterval               = 250 * time.Millisecond
+	defaultSendInterval               = 2000 * time.Millisecond
 	defaultMetricsListenAddr          = ":2112"
 	defaultRetryMaxAttempts           = 5
 	defaultRetryInitialBackoff        = 100 * time.Millisecond
